@@ -73,12 +73,12 @@ export default function ProductsPage() {
   const createCatMutation = useMutation({
     mutationFn: (dto: CreateCategoryDto) => categoriesApi.create(dto),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['categories'] }); toast.success('Categoría creada'); setCatModal(null); },
-    onError:   (e: Error) => toast.error(e.message || 'Error al crear categoría'),
+    onError: (e: unknown) => { const ax = e as { response?: { data?: { message?: string | string[] } } }; const m = ax?.response?.data?.message; toast.error(Array.isArray(m) ? m[0] : (m ?? 'Error al crear categoría')); }
   });
   const updateCatMutation = useMutation({
     mutationFn: ({ id, dto }: { id: number; dto: { name: string } }) => categoriesApi.update(id, dto),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['categories'] }); qc.invalidateQueries({ queryKey: ['products'] }); toast.success('Categoría actualizada'); setCatModal(null); },
-    onError:   (e: Error) => toast.error(e.message || 'Error al actualizar'),
+    onError: (e: unknown) => { const ax = e as { response?: { data?: { message?: string | string[] } } }; const m = ax?.response?.data?.message; toast.error(Array.isArray(m) ? m[0] : (m ?? 'Error al actualizar')); }
   });
   const deleteCatMutation = useMutation({
     mutationFn: (id: number) => categoriesApi.delete(id),
@@ -88,7 +88,7 @@ export default function ProductsPage() {
       if (selectedCategoryId === (catModal as { target: Category })?.target?.id) setSelectedCategoryId(null);
       toast.success('Categoría eliminada'); setCatModal(null);
     },
-    onError: (e: Error) => toast.error(e.message || 'Error al eliminar'),
+    onError: (e: unknown) => { const ax = e as { response?: { data?: { message?: string | string[] } } }; const m = ax?.response?.data?.message; toast.error(Array.isArray(m) ? m[0] : (m ?? 'Error al eliminar')); }
   });
 
   const handleCatConfirm = (data?: CreateCategoryDto | { name: string }) => {
@@ -103,17 +103,17 @@ export default function ProductsPage() {
   const createProdMutation = useMutation({
     mutationFn: (dto: CreateProductDto) => productsApi.create(dto),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['products'] }); qc.invalidateQueries({ queryKey: ['categories'] }); toast.success('Producto creado'); setProdModal({ open: false }); },
-    onError:   (e: Error) => toast.error(e.message || 'Error al crear producto'),
+    onError: (e: unknown) => { const ax = e as { response?: { data?: { message?: string | string[] } } }; const m = ax?.response?.data?.message; toast.error(Array.isArray(m) ? m[0] : (m ?? 'Error al crear producto')); }
   });
   const updateProdMutation = useMutation({
     mutationFn: ({ id, dto }: { id: string; dto: UpdateProductDto }) => productsApi.update(id, dto),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['products'] }); toast.success('Producto actualizado'); setProdModal({ open: false }); },
-    onError:   (e: Error) => toast.error(e.message || 'Error al actualizar'),
+    onError: (e: unknown) => { const ax = e as { response?: { data?: { message?: string | string[] } } }; const m = ax?.response?.data?.message; toast.error(Array.isArray(m) ? m[0] : (m ?? 'Error al actualizar')); }
   });
   const deleteProdMutation = useMutation({
     mutationFn: (id: string) => productsApi.delete(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['products'] }); qc.invalidateQueries({ queryKey: ['categories'] }); toast.success('Producto eliminado'); setDeleteModal(null); },
-    onError:   (e: Error) => toast.error(e.message || 'Error al eliminar'),
+    onError: (e: unknown) => { const ax = e as { response?: { data?: { message?: string | string[] } } }; const m = ax?.response?.data?.message; toast.error(Array.isArray(m) ? m[0] : (m ?? 'Error al eliminar')); }
   });
   const toggleActiveMutation = useMutation({
     mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) => productsApi.update(id, { isActive }),

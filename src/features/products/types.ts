@@ -1,4 +1,5 @@
-// ─── Category ────────────────────────────────────────────────────────────────
+// src/features/products/types.ts
+
 export interface Category {
   id: number;
   name: string;
@@ -11,64 +12,63 @@ export interface CreateCategoryDto {
   name: string;
   parentId?: number | null;
 }
-
 export interface UpdateCategoryDto {
   name?: string;
   parentId?: number | null;
 }
 
-// ─── Product ─────────────────────────────────────────────────────────────────
+// ── PRODUCT ──────────────────────────────────────────────────────────────────
 export interface Product {
   id: string;
-  code: string;
+  sku: string;           // código interno (Cpcode del S12)
   barcode?: string | null;
   name: string;
-  unit?: string | null;
+  description?: string | null;
   spec?: string | null;
+  unit?: string | null;
   notes?: string | null;
   isActive: boolean;
+  isPublished: boolean;
+  isFeatured: boolean;
   categoryId?: number | null;
   category?: Category | null;
 
-  // Precios
-  costPrice: number;       // jhj  - precio de costo
-  retailPrice: number;     // lsj  - precio de venta público
-  wholesalePrice1?: number | null; // pfj
-  wholesalePrice2?: number | null; // pfj2
-  wholesalePrice3?: number | null; // pfj3
-  memberPrice?: number | null;     // Hyj - precio miembro
+  costPrice: number;
+  retailPrice: number;
+  wholesalePrice1?: number | null;
+  wholesalePrice2?: number | null;
+  wholesalePrice3?: number | null;
+  memberPrice?: number | null;
   vipPrice2?: number | null;
   vipPrice3?: number | null;
   vipPrice4?: number | null;
   vipPrice5?: number | null;
+  taxRate?: number | null;
+  isTaxExempt?: boolean;
 
-  // Empaque
-  zzsl?: number | null;    // unidades por caja
-  lunit?: number | null;   // unidad base conversión
+  mainImageUrl?: string | null;
 
   createdAt: string;
   updatedAt: string;
 
-  // Stock (para mostrar en tabla)
-  stock?: StockSummary[];
-}
-
-export interface StockSummary {
-  warehouseId: string;
-  warehouse?: { name: string };
-  quantity: number;
-  minStock: number;
+  // Calculado por el backend
+  totalStock?: number;
+  isLowStock?: boolean;
 }
 
 export interface CreateProductDto {
-  code: string;
-  barcode?: string;
   name: string;
-  unit?: string;
+  sku?: string;          // código interno — auto-generado si vacío
+  barcode?: string;
+  description?: string;
   spec?: string;
+  unit?: string;
   notes?: string;
   isActive?: boolean;
+  isPublished?: boolean;
+  isFeatured?: boolean;
   categoryId?: number | null;
+
   costPrice: number;
   retailPrice: number;
   wholesalePrice1?: number;
@@ -79,8 +79,8 @@ export interface CreateProductDto {
   vipPrice3?: number;
   vipPrice4?: number;
   vipPrice5?: number;
-  zzsl?: number;
-  lunit?: number;
+  taxRate?: number;
+  isTaxExempt?: boolean;
 }
 
 export type UpdateProductDto = Partial<CreateProductDto>;

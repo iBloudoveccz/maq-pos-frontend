@@ -25,45 +25,42 @@ function CategoryNode({
   onEdit: (cat: Category) => void;
   onDelete: (cat: Category) => void;
 }) {
-  const [open, setOpen]       = useState(true);
+  const [open, setOpen]         = useState(true);
   const [showMenu, setShowMenu] = useState(false);
   const hasChildren = (category.children?.length ?? 0) > 0;
   const isSelected  = selectedId === category.id;
+  const isRoot      = level === 0;   // Solo raíces pueden tener subcategorías
 
   return (
     <div>
       <div
-        className={`group flex items-center gap-1.5 py-[6px] px-2 rounded-md cursor-pointer text-sm transition-all select-none
-          ${isSelected
-            ? 'bg-indigo-600 text-white'
-            : 'text-slate-700 hover:bg-slate-100'
-          }`}
-        style={{ paddingLeft: `${10 + level * 18}px` }}
+        className={`group flex items-center gap-1.5 py-[5px] px-2 rounded-md cursor-pointer text-xs transition-all select-none
+          ${isSelected ? 'bg-indigo-600 text-white' : 'text-slate-700 hover:bg-slate-100'}`}
+        style={{ paddingLeft: `${10 + level * 16}px` }}
         onClick={() => {
           onSelect(isSelected ? null : category.id);
           if (hasChildren) setOpen(o => !o);
         }}
       >
-        {/* Expand chevron */}
-        <span className="w-3.5 flex-shrink-0 flex items-center">
+        {/* Chevron */}
+        <span className="w-3 flex-shrink-0">
           {hasChildren
-            ? open ? <ChevronDown size={11} /> : <ChevronRight size={11} />
-            : level > 0 ? <span className="text-slate-300 text-xs">└</span> : null
-          }
+            ? open ? <ChevronDown size={10} /> : <ChevronRight size={10} />
+            : null}
         </span>
 
-        {/* Icon */}
+        {/* Folder icon */}
         {isSelected
-          ? <FolderOpen size={14} className="flex-shrink-0 text-indigo-200" />
-          : <Folder size={14} className={`flex-shrink-0 ${level === 0 ? 'text-amber-400' : 'text-slate-400'}`} />
+          ? <FolderOpen size={13} className="flex-shrink-0 text-indigo-200" />
+          : <Folder size={13} className={`flex-shrink-0 ${isRoot ? 'text-amber-400' : 'text-slate-400'}`} />
         }
 
         {/* Name */}
-        <span className="flex-1 truncate text-xs font-medium leading-tight" title={category.name}>
+        <span className="flex-1 truncate font-medium leading-tight" title={category.name}>
           {category.name}
         </span>
 
-        {/* Count badge */}
+        {/* Count */}
         {(category._count?.products ?? 0) > 0 && (
           <span className={`text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 font-semibold ${
             isSelected ? 'bg-indigo-500 text-indigo-100' : 'bg-slate-200 text-slate-500'
@@ -72,8 +69,8 @@ function CategoryNode({
           </span>
         )}
 
-        {/* Menu button */}
-        <div className="relative ml-0.5">
+        {/* Context menu */}
+        <div className="relative">
           <button
             onClick={e => { e.stopPropagation(); setShowMenu(v => !v); }}
             className={`p-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity ${
@@ -86,19 +83,22 @@ function CategoryNode({
           {showMenu && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-              <div className="absolute left-0 top-5 z-20 bg-white border border-slate-200 rounded-lg shadow-xl py-1 w-52 text-xs">
-                <button
-                  onClick={e => { e.stopPropagation(); setShowMenu(false); onCreateSub(category); }}
-                  className="flex items-center gap-2 w-full px-3 py-2 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700"
-                >
-                  <FolderPlus size={13} className="text-indigo-500" />
-                  Nueva subcategoría
-                </button>
+              <div className="absolute left-0 top-5 z-20 bg-white border border-slate-200 rounded-lg shadow-xl py-1 w-48 text-xs">
+                {/* Solo mostrar "nueva subcategoría" si es categoría raíz */}
+                {isRoot && (
+                  <button
+                    onClick={e => { e.stopPropagation(); setShowMenu(false); onCreateSub(category); }}
+                    className="flex items-center gap-2 w-full px-3 py-2 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700"
+                  >
+                    <FolderPlus size={12} className="text-indigo-500" />
+                    Nueva subcategoría
+                  </button>
+                )}
                 <button
                   onClick={e => { e.stopPropagation(); setShowMenu(false); onEdit(category); }}
                   className="flex items-center gap-2 w-full px-3 py-2 hover:bg-slate-50 text-slate-700"
                 >
-                  <Edit2 size={13} className="text-slate-400" />
+                  <Edit2 size={12} className="text-slate-400" />
                   Editar
                 </button>
                 <hr className="my-1 border-slate-100" />
@@ -106,7 +106,7 @@ function CategoryNode({
                   onClick={e => { e.stopPropagation(); setShowMenu(false); onDelete(category); }}
                   className="flex items-center gap-2 w-full px-3 py-2 hover:bg-red-50 text-red-500"
                 >
-                  <Trash2 size={13} />
+                  <Trash2 size={12} />
                   Eliminar
                 </button>
               </div>
@@ -115,9 +115,9 @@ function CategoryNode({
         </div>
       </div>
 
-      {/* Children */}
+      {/* Children con línea guía */}
       {hasChildren && open && (
-        <div className="border-l border-slate-200 ml-[22px]">
+        <div className="ml-5 border-l border-slate-200 pl-1 mt-0.5 space-y-0.5">
           {category.children!.map(child => (
             <CategoryNode
               key={child.id} category={child} level={level + 1}
@@ -144,27 +144,23 @@ export default function CategoryPanel({
   const tree = addChildren(roots);
 
   return (
-    <aside className="w-56 flex-shrink-0 bg-white border-r border-slate-200 flex flex-col overflow-hidden">
+    <aside style={{ width: 224, flexShrink: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'white', borderRight: '1px solid #e2e8f0' }}>
+
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2.5 border-b border-slate-200 bg-slate-50 flex-shrink-0">
         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Categorías</span>
-        <button
-          onClick={onCreateRoot}
-          title="Nueva categoría raíz"
-          className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-indigo-100 text-indigo-600 transition-colors"
-        >
+        <button onClick={onCreateRoot} title="Nueva categoría"
+          className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-indigo-100 text-indigo-600 transition-colors">
           <Plus size={14} />
         </button>
       </div>
 
-      {/* "Todos" option */}
+      {/* Todos */}
       <div className="px-2 pt-2 flex-shrink-0">
         <button
           onClick={() => onSelect(null)}
           className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-semibold transition-all ${
-            selectedId === null
-              ? 'bg-indigo-600 text-white'
-              : 'text-slate-600 hover:bg-slate-100'
+            selectedId === null ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
           <Folder size={13} className={selectedId === null ? 'text-indigo-200' : 'text-slate-400'} />
@@ -172,32 +168,30 @@ export default function CategoryPanel({
         </button>
       </div>
 
-      {/* Divider */}
       <div className="mx-3 my-2 border-t border-slate-100 flex-shrink-0" />
 
       {/* Tree */}
-      <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-0.5">
+      <div style={{ flex: 1, overflowY: 'auto', padding: '0 8px 8px 8px' }}>
         {loading ? (
-          <p className="text-xs text-slate-400 px-2 py-3 text-center">Cargando...</p>
+          <p className="text-xs text-slate-400 text-center py-4">Cargando...</p>
         ) : tree.length === 0 ? (
           <div className="text-center py-6">
-            <FolderPlus size={22} className="mx-auto mb-1.5 text-slate-300" />
-            <p className="text-xs text-slate-400">Sin categorías</p>
-            <button
-              onClick={onCreateRoot}
-              className="mt-2 text-xs text-indigo-600 hover:underline"
-            >
+            <FolderPlus size={22} className="mx-auto mb-2 text-slate-300" />
+            <p className="text-xs text-slate-400 mb-2">Sin categorías</p>
+            <button onClick={onCreateRoot} className="text-xs text-indigo-600 hover:underline">
               + Crear primera categoría
             </button>
           </div>
         ) : (
-          tree.map(cat => (
-            <CategoryNode
-              key={cat.id} category={cat} level={0}
-              selectedId={selectedId} onSelect={onSelect}
-              onCreateSub={onCreateSub} onEdit={onEdit} onDelete={onDelete}
-            />
-          ))
+          <div className="space-y-0.5">
+            {tree.map(cat => (
+              <CategoryNode
+                key={cat.id} category={cat} level={0}
+                selectedId={selectedId} onSelect={onSelect}
+                onCreateSub={onCreateSub} onEdit={onEdit} onDelete={onDelete}
+              />
+            ))}
+          </div>
         )}
       </div>
     </aside>

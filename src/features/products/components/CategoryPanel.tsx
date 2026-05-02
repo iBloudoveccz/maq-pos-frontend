@@ -37,13 +37,13 @@ function CategoryNode({
         className={`group flex items-center gap-1.5 py-[5px] px-2 rounded-md cursor-pointer text-xs transition-all select-none
           ${isSelected ? 'bg-indigo-600 text-white' : 'text-slate-700 hover:bg-slate-100'}`}
         style={{ paddingLeft: `${10 + level * 16}px` }}
-        onClick={() => {
-          onSelect(isSelected ? null : category.id);
-          if (hasChildren) setOpen(o => !o);
-        }}
+        onClick={() => onSelect(isSelected ? null : category.id)}
       >
-        {/* Chevron */}
-        <span className="w-3 flex-shrink-0">
+        {/* Chevron — solo este span maneja el colapso */}
+        <span
+          className="w-3 flex-shrink-0 flex items-center justify-center"
+          onClick={e => { if (hasChildren) { e.stopPropagation(); setOpen(o => !o); } }}
+        >
           {hasChildren
             ? open ? <ChevronDown size={10} /> : <ChevronRight size={10} />
             : null}

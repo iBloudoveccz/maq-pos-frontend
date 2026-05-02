@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Search, Plus, Edit2, Trash2, ToggleLeft, ToggleRight,
-  Package, ChevronLeft, ChevronRight, Filter, RefreshCw
+  Package, ChevronLeft, ChevronRight, RefreshCw
 } from 'lucide-react';
 import type { Product } from '../types';
 
@@ -19,12 +19,13 @@ interface Props {
   onDelete: (p: Product) => void;
   onToggleActive: (p: Product) => void;
   categoryName?: string;
+  onBreadcrumbRoot?: () => void;
 }
 
 export default function ProductTable({
   products, total, page, limit, loading,
   search, onSearchChange, onPageChange,
-  onNew, onEdit, onDelete, onToggleActive, categoryName
+  onNew, onEdit, onDelete, onToggleActive, categoryName, onBreadcrumbRoot
 }: Props) {
   const totalPages = Math.ceil(total / limit) || 1;
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -32,42 +33,51 @@ export default function ProductTable({
   return (
     <div className="flex flex-col h-full overflow-hidden">
 
-      {/* ── Toolbar (similar al S12) ── */}
-      <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border-b border-slate-200 flex-shrink-0">
-        {/* Nuevo */}
-        <button
-          onClick={onNew}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-md hover:bg-indigo-700 transition-colors shadow-sm"
-        >
-          <Plus size={13} /> Nuevo
-        </button>
-
-        <div className="w-px h-5 bg-slate-300 mx-1" />
-
-        {/* Search */}
-        <div className="relative flex-1 max-w-xs">
-          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            value={search}
-            onChange={e => onSearchChange(e.target.value)}
-            placeholder="Búsqueda por código, nombre..."
-            className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 bg-white transition-all"
-          />
+      {/* ── Toolbar ── */}
+      <div className="px-4 py-3 bg-white border-b border-slate-200 flex-shrink-0">
+        {/* Breadcrumb title */}
+        <div className="flex items-center gap-1.5 mb-2.5">
+          <span
+            onClick={onBreadcrumbRoot}
+            className="text-sm font-semibold text-slate-500 hover:text-indigo-600 cursor-pointer transition-colors"
+          >
+            Productos
+          </span>
+          {categoryName && (
+            <>
+              <span className="text-slate-300 text-sm">/</span>
+              <span className="text-sm font-semibold text-slate-800">{categoryName}</span>
+            </>
+          )}
         </div>
 
-        {/* Categoría activa */}
-        {categoryName && (
-          <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 border border-amber-200 rounded-md">
-            <Filter size={11} className="text-amber-500" />
-            <span className="text-xs font-medium text-amber-700 max-w-[140px] truncate">{categoryName}</span>
-          </div>
-        )}
+        {/* Actions row */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onNew}
+            className="flex items-center gap-1.5 px-4 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-full hover:bg-indigo-700 transition-colors shadow-sm"
+          >
+            <Plus size={13} /> Nuevo
+          </button>
 
-        <div className="ml-auto flex items-center gap-2">
-          {/* Total */}
-          <span className="text-xs text-slate-400">
-            {loading ? <RefreshCw size={12} className="animate-spin" /> : `${total} registro${total !== 1 ? 's' : ''}`}
-          </span>
+          <div className="w-px h-5 bg-slate-200 mx-0.5" />
+
+          {/* Search */}
+          <div className="relative flex-1 max-w-sm">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              value={search}
+              onChange={e => onSearchChange(e.target.value)}
+              placeholder="Búsqueda por código, nombre..."
+              className="w-full pl-8 pr-4 py-1.5 text-xs border border-slate-200 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 bg-slate-50 transition-all placeholder:text-slate-400"
+            />
+          </div>
+
+          <div className="ml-auto flex items-center gap-2">
+            <span className="text-xs text-slate-400">
+              {loading ? <RefreshCw size={12} className="animate-spin" /> : `${total} registro${total !== 1 ? 's' : ''}`}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -98,6 +108,7 @@ export default function ProductTable({
           <table className="w-full text-xs border-collapse">
             <thead className="sticky top-0 z-10 bg-slate-100">
               <tr className="border-b-2 border-slate-300">
+                <th className="px-3 py-2 w-12"></th>
                 <th className="text-left px-3 py-2 font-bold text-slate-600 w-8">#</th>
                 <th className="text-left px-3 py-2 font-bold text-slate-600 w-28">Código</th>
                 <th className="text-left px-3 py-2 font-bold text-slate-600">Nombre</th>
@@ -107,7 +118,7 @@ export default function ProductTable({
                 <th className="text-right px-3 py-2 font-bold text-slate-600 w-24">P. Venta</th>
                 <th className="text-right px-3 py-2 font-bold text-slate-600 w-20 hidden lg:table-cell">Margen</th>
                 <th className="text-center px-3 py-2 font-bold text-slate-600 w-20 hidden md:table-cell">Estado</th>
-                <th className="px-3 py-2 w-20"></th>
+                <th className="px-3 py-2 w-32"></th>
               </tr>
             </thead>
             <tbody>
@@ -128,52 +139,60 @@ export default function ProductTable({
                       ${!p.isActive ? 'opacity-50' : ''}
                     `}
                   >
-                    <td className="px-3 py-2 text-slate-400 text-center">{(page-1)*limit+idx+1}</td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2.5">
+                      <div className="w-9 h-9 rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center flex-shrink-0 border border-slate-200">
+                        {p.mainImageUrl
+                          ? <img src={p.mainImageUrl} alt={p.name} className="w-full h-full object-cover" />
+                          : <Package size={14} className="text-slate-300" />
+                        }
+                      </div>
+                    </td>
+                    <td className="px-3 py-2.5 text-slate-400 text-center">{(page-1)*limit+idx+1}</td>
+                    <td className="px-3 py-2.5">
                       <span className="font-mono bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded text-[11px]">
                         {p.code}
                       </span>
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2.5">
                       <p className="font-semibold text-slate-800 leading-tight">{p.name}</p>
                       {p.barcode && <p className="text-[10px] text-slate-400 font-mono mt-0.5">{p.barcode}</p>}
                       {p.spec   && <p className="text-[10px] text-slate-400">{p.spec}</p>}
                     </td>
-                    <td className="px-3 py-2 hidden lg:table-cell">
+                    <td className="px-3 py-2.5 hidden lg:table-cell">
                       {p.category
                         ? <span className="bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full text-[10px] font-medium">{p.category.name}</span>
                         : <span className="text-slate-300">—</span>
                       }
                     </td>
-                    <td className="px-3 py-2 text-slate-500 hidden md:table-cell">{p.unit ?? '—'}</td>
-                    <td className="px-3 py-2 text-right font-mono text-slate-600">S/. {p.costPrice.toFixed(2)}</td>
-                    <td className="px-3 py-2 text-right font-mono font-bold text-slate-800">S/. {p.retailPrice.toFixed(2)}</td>
-                    <td className="px-3 py-2 text-right hidden lg:table-cell">
+                    <td className="px-3 py-2.5 text-slate-500 hidden md:table-cell">{p.unit ?? '—'}</td>
+                    <td className="px-3 py-2.5 text-right font-mono text-slate-600">S/. {p.costPrice.toFixed(2)}</td>
+                    <td className="px-3 py-2.5 text-right font-mono font-bold text-slate-800">S/. {p.retailPrice.toFixed(2)}</td>
+                    <td className="px-3 py-2.5 text-right hidden lg:table-cell">
                       {margin !== null
                         ? <span className={`font-bold ${parseFloat(margin)>20?'text-emerald-600':parseFloat(margin)>0?'text-amber-600':'text-red-500'}`}>{margin}%</span>
                         : <span className="text-slate-300">—</span>
                       }
                     </td>
-                    <td className="px-3 py-2 text-center hidden md:table-cell">
+                    <td className="px-3 py-2.5 text-center hidden md:table-cell">
                       <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-semibold ${
                         p.isActive ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-400'
                       }`}>
                         {p.isActive ? '● Activo' : '○ Inactivo'}
                       </span>
                     </td>
-                    <td className="px-2 py-1.5">
-                      <div className="flex items-center justify-end gap-0.5">
+                    <td className="px-3 py-2">
+                      <div className="flex items-center justify-end gap-1">
                         <button onClick={() => onEdit(p)} title="Editar"
-                          className="p-1.5 rounded hover:bg-indigo-100 text-slate-400 hover:text-indigo-600 transition-colors">
-                          <Edit2 size={12} />
+                          className="p-2 rounded-md hover:bg-indigo-100 text-slate-400 hover:text-indigo-600 transition-colors">
+                          <Edit2 size={14} />
                         </button>
                         <button onClick={() => onToggleActive(p)} title={p.isActive ? 'Desactivar' : 'Activar'}
-                          className="p-1.5 rounded hover:bg-amber-100 text-slate-400 hover:text-amber-600 transition-colors">
-                          {p.isActive ? <ToggleRight size={12} /> : <ToggleLeft size={12} />}
+                          className="p-2 rounded-md hover:bg-amber-100 text-slate-400 hover:text-amber-600 transition-colors">
+                          {p.isActive ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
                         </button>
                         <button onClick={() => onDelete(p)} title="Eliminar"
-                          className="p-1.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-500 transition-colors">
-                          <Trash2 size={12} />
+                          className="p-2 rounded-md hover:bg-red-100 text-slate-400 hover:text-red-500 transition-colors">
+                          <Trash2 size={14} />
                         </button>
                       </div>
                     </td>

@@ -149,18 +149,6 @@ export default function ProductsPage() {
       {/* ── Right: product area ── */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "white" }}>
 
-        {/* Breadcrumb bar */}
-        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border-b border-slate-200 text-[11px] text-slate-500 flex-shrink-0">
-          <span className="cursor-pointer hover:text-indigo-600 transition-colors font-medium" onClick={() => handleCategorySelect(null)}>
-            Productos
-          </span>
-          {selectedCategory && (
-            <> <span className="text-slate-300">/</span>
-               <span className="text-slate-700 font-semibold">{selectedCategory.name}</span>
-            </>
-          )}
-        </div>
-
         <ProductTable
           products={products} total={total} page={page} limit={LIMIT}
           loading={prodsLoading} search={search}
@@ -170,6 +158,7 @@ export default function ProductsPage() {
           onDelete={setDeleteModal}
           onToggleActive={p => toggleActiveMutation.mutate({ id: p.id, isActive: !p.isActive })}
           categoryName={selectedCategory?.name}
+          onBreadcrumbRoot={() => handleCategorySelect(null)}
         />
       </div>
 

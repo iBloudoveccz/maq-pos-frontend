@@ -40,14 +40,13 @@ function MarginBadge({ cost, retail }: { cost: number; retail: number }) {
   const ok   = margin >= MARGIN_GOAL;
   const warn = margin >= MARGIN_GOAL * 0.6 && margin < MARGIN_GOAL;
   return (
-    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border ${
-      ok   ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
-      warn ? 'bg-amber-50  border-amber-200  text-amber-700'   :
-             'bg-red-50    border-red-200    text-red-700'
+    <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-bold ${
+      ok   ? 'bg-emerald-100 text-emerald-700' :
+      warn ? 'bg-amber-100  text-amber-700'   :
+             'bg-red-100    text-red-700'
     }`}>
-      {ok ? <TrendingUp size={13} /> : warn ? <Minus size={13} /> : <TrendingDown size={13} />}
-      Margen {margin.toFixed(1)}%
-      {!ok && <span className="opacity-70"> (mín. {MARGIN_GOAL}%)</span>}
+      {ok ? <TrendingUp size={11}/> : warn ? <Minus size={11}/> : <TrendingDown size={11}/>}
+      {margin.toFixed(1)}%
     </div>
   );
 }
@@ -130,7 +129,6 @@ export default function ProductFormModal({
     return Object.keys(e).length === 0;
   };
 
-  /** Construye payload limpio — solo campos que el backend acepta */
   const buildPayload = (): CreateProductDto => ({
     name:       form.name.trim(),
     unit:       form.unit || 'Unid',
@@ -155,6 +153,7 @@ export default function ProductFormModal({
     ...(form.vipPrice5           && { vipPrice5:       form.vipPrice5 }),
     taxRate:    form.taxRate ?? 0.18,
     isTaxExempt: form.isTaxExempt ?? false,
+    ...(imgPreview && { mainImageUrl: imgPreview }),
   });
 
   const handleSave = () => { if (validate()) onSave(buildPayload()); };
@@ -167,248 +166,276 @@ export default function ProductFormModal({
     );
   });
 
-  const inp = (f: string) => `w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 transition-all ${errors[f] ? 'border-red-300 focus:ring-red-200' : 'border-slate-300 focus:ring-indigo-200 focus:border-indigo-400'}`;
-  const numInp = `w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-all`;
+  /* helpers de estilo */
+  const inp  = (f: string) => `w-full border rounded-md px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 transition-all ${errors[f] ? 'border-red-300 focus:ring-red-200 bg-red-50' : 'border-slate-300 focus:ring-indigo-200 focus:border-indigo-400'}`;
+  const nInp = `w-full border border-slate-300 rounded-md px-2.5 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-all`;
+  const lbl  = 'block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1';
 
-  const Section = ({ title }: { title: string }) => (
-    <div className="flex items-center gap-2 mb-3">
+  const SectionTitle = ({ title }: { title: string }) => (
+    <div className="flex items-center gap-2 mb-3 mt-1">
       <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest whitespace-nowrap">{title}</span>
-      <span className="flex-1 h-px bg-indigo-100 block" />
+      <span className="flex-1 h-px bg-indigo-100" />
     </div>
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col" style={{ maxHeight: '92vh' }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-3">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col" style={{ maxHeight: '94vh' }}>
 
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 bg-slate-50 rounded-t-2xl flex-shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-indigo-100 flex items-center justify-center">
+        {/* ── Header ── */}
+        <div className="flex items-center justify-between px-6 py-3 border-b border-slate-200 bg-slate-50 rounded-t-2xl flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0">
               <Package size={14} className="text-indigo-600" />
             </div>
             <div>
-              <h2 className="font-bold text-slate-800 text-sm">{product ? 'Editar producto' : 'Nuevo producto'}</h2>
-              {product && <p className="text-xs text-slate-400">SKU: {product.sku}</p>}
+              <h2 className="font-bold text-slate-800 text-sm leading-tight">
+                {product ? 'Editar producto' : 'Nuevo producto'}
+              </h2>
+              {product && <p className="text-[11px] text-slate-400">SKU: {product.sku}</p>}
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-400"><X size={16} /></button>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-400 transition-colors">
+            <X size={16} />
+          </button>
         </div>
 
-        {/* Scroll body */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+        {/* ── Body (sin scroll si es posible) ── */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-5">
 
-          {/* ── INFO BÁSICA ── */}
-          <Section title="Información básica" />
+            {/* ════ FILA PRINCIPAL: Campos + Foto ════ */}
+            <div className="flex gap-5">
 
-          {/* Foto */}
-          <div className="flex items-center gap-3 mb-3">
-            <div onClick={() => fileRef.current?.click()}
-              className={`w-20 h-20 rounded-xl border-2 border-dashed flex items-center justify-center cursor-pointer overflow-hidden flex-shrink-0 transition-all ${imgPreview ? 'border-slate-200' : 'border-slate-300 hover:border-indigo-400 hover:bg-indigo-50'}`}>
-              {imgPreview
-                ? <img src={imgPreview} className="w-full h-full object-cover" />
-                : <div className="text-center"><ImagePlus size={20} className="text-slate-300 mx-auto mb-1" /><span className="text-[10px] text-slate-400">Foto</span></div>
-              }
-            </div>
-            <div className="text-xs text-slate-400">
-              <p>Haz clic para agregar una imagen</p>
-              <p className="text-[10px]">JPG, PNG — máx. 2MB</p>
-              {imgPreview && (
-                <button onClick={() => { setImgPreview(null); if(fileRef.current) fileRef.current.value=''; }}
-                  className="flex items-center gap-1 text-red-400 hover:text-red-600 mt-1"><Trash2 size={10}/> Quitar</button>
-              )}
-            </div>
-            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImage} />
-          </div>
+              {/* ── Columna izquierda: todos los campos ── */}
+              <div className="flex-1 min-w-0">
 
-          <div className="grid grid-cols-2 gap-3">
-            {/* Categoría */}
-            <div className="col-span-2">
-              <label className="block text-xs font-medium text-slate-600 mb-1">Categoría</label>
-              <select value={form.categoryId ?? ''} onChange={e => {
-                const id = e.target.value ? parseInt(e.target.value) : null;
-                set('categoryId', id);
-                if (!product) set('sku', generateSku(id));
-              }} className={inp('categoryId')}>
-                <option value="">-- Sin categoría --</option>
-                {flatCats.map(c => <option key={c.id} value={c.id}>{c.isChild ? `   └ ${c.label}` : c.label}</option>)}
-              </select>
-            </div>
+                {/* Fila 1: Categoría | Código | Barcode */}
+                <div className="grid grid-cols-12 gap-2 mb-3">
+                  <div className="col-span-4">
+                    <label className={lbl}>Categoría</label>
+                    <select value={form.categoryId ?? ''} onChange={e => {
+                      const id = e.target.value ? parseInt(e.target.value) : null;
+                      set('categoryId', id);
+                      if (!product) set('sku', generateSku(id));
+                    }} className={inp('categoryId')}>
+                      <option value="">-- Sin categoría --</option>
+                      {flatCats.map(c => <option key={c.id} value={c.id}>{c.isChild ? `  └ ${c.label}` : c.label}</option>)}
+                    </select>
+                  </div>
+                  <div className="col-span-4">
+                    <label className={lbl}>Código (SKU)</label>
+                    <div className="flex gap-1">
+                      <input value={form.sku ?? ''} onChange={e => set('sku', e.target.value)}
+                        placeholder="Auto-gen." className={`${inp('sku')} flex-1`} />
+                      <button type="button" onClick={() => set('sku', generateSku(form.categoryId))}
+                        title="Regenerar" className="px-2 border border-slate-300 rounded-md hover:bg-indigo-50 hover:border-indigo-300 text-slate-400 hover:text-indigo-600 transition-colors">
+                        <Wand2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="col-span-4">
+                    <label className={lbl}>Código de barras</label>
+                    <input value={form.barcode ?? ''} onChange={e => set('barcode', e.target.value)}
+                      placeholder="EAN / UPC" className={inp('barcode')} />
+                  </div>
+                </div>
 
-            {/* SKU / Código */}
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Código (SKU)</label>
-              <div className="flex gap-1.5">
-                <input value={form.sku ?? ''} onChange={e => set('sku', e.target.value)}
-                  placeholder="Auto-generado" className={`${inp('sku')} flex-1`} />
-                <button type="button" onClick={() => set('sku', generateSku(form.categoryId))} title="Regenerar código"
-                  className="px-2 border border-slate-300 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 text-slate-400 hover:text-indigo-600 transition-colors">
-                  <Wand2 size={14} />
-                </button>
+                {/* Fila 2: Nombre (completo) */}
+                <div className="mb-3">
+                  <label className={lbl}>Nombre <span className="text-red-400 normal-case">*</span></label>
+                  <input value={form.name} onChange={e => set('name', e.target.value.toUpperCase())}
+                    placeholder="Nombre del producto" className={inp('name')} />
+                  {errors.name && <p className="text-red-500 text-[11px] mt-0.5">{errors.name}</p>}
+                </div>
+
+                {/* Fila 3: Unidad | Espec | Estado */}
+                <div className="grid grid-cols-12 gap-2 mb-3">
+                  <div className="col-span-3">
+                    <label className={lbl}>Unidad</label>
+                    <input list="units-list" value={form.unit ?? ''} onChange={e => set('unit', e.target.value)}
+                      placeholder="Unid, Kg..." className={inp('unit')} />
+                    <datalist id="units-list">{UNITS.map(u => <option key={u} value={u} />)}</datalist>
+                  </div>
+                  <div className="col-span-4">
+                    <label className={lbl}>Especificación</label>
+                    <input value={form.spec ?? ''} onChange={e => set('spec', e.target.value)}
+                      placeholder="Presentación, tamaño..." className={inp('spec')} />
+                  </div>
+                  <div className="col-span-5">
+                    <label className={lbl}>Estado</label>
+                    <div className="flex gap-1.5">
+                      {[true, false].map(v => (
+                        <button key={String(v)} type="button" onClick={() => set('isActive', v)}
+                          className={`flex-1 py-1.5 rounded-md text-xs font-semibold border transition-all ${
+                            form.isActive === v
+                              ? v ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-slate-400 text-white border-slate-400'
+                              : 'bg-white text-slate-500 border-slate-300 hover:border-slate-400'
+                          }`}>{v ? '✓ Activo' : '✗ Inactivo'}</button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Fila 4: Descripción | Notas */}
+                <div className="grid grid-cols-2 gap-2 mb-1">
+                  <div>
+                    <label className={lbl}>Descripción</label>
+                    <textarea value={form.description ?? ''} onChange={e => set('description', e.target.value)}
+                      rows={2} placeholder="Descripción del producto..." className={`${inp('description')} resize-none text-xs`} />
+                  </div>
+                  <div>
+                    <label className={lbl}>Notas internas</label>
+                    <textarea value={form.notes ?? ''} onChange={e => set('notes', e.target.value)}
+                      rows={2} placeholder="Observaciones para uso interno..." className={`${inp('notes')} resize-none text-xs`} />
+                  </div>
+                </div>
               </div>
-              <p className="text-[10px] text-slate-400 mt-0.5">Dejar vacío para auto-generar</p>
-            </div>
 
-            {/* Barcode */}
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Código de barras</label>
-              <input value={form.barcode ?? ''} onChange={e => set('barcode', e.target.value)}
-                placeholder="EAN / UPC" className={inp('barcode')} />
-            </div>
-
-            {/* Nombre */}
-            <div className="col-span-2">
-              <label className="block text-xs font-medium text-slate-600 mb-1">Nombre <span className="text-red-400">*</span></label>
-              <input value={form.name} onChange={e => set('name', e.target.value.toUpperCase())}
-                placeholder="Nombre del producto" className={inp('name')} />
-              {errors.name && <p className="text-red-500 text-xs mt-0.5">{errors.name}</p>}
-            </div>
-
-            {/* Unidad */}
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Unidad de medida</label>
-              <input list="units-list" value={form.unit ?? ''} onChange={e => set('unit', e.target.value)}
-                placeholder="Unid, Kg, Caja..." className={inp('unit')} />
-              <datalist id="units-list">{UNITS.map(u => <option key={u} value={u} />)}</datalist>
-            </div>
-
-            {/* Especificación */}
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Especificación</label>
-              <input value={form.spec ?? ''} onChange={e => set('spec', e.target.value)}
-                placeholder="Presentación, tamaño..." className={inp('spec')} />
-            </div>
-
-            {/* Estado */}
-            <div className="col-span-2">
-              <label className="block text-xs font-medium text-slate-600 mb-1.5">Estado</label>
-              <div className="flex gap-2">
-                {[true, false].map(v => (
-                  <button key={String(v)} type="button" onClick={() => set('isActive', v)}
-                    className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                      form.isActive === v
-                        ? v ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-slate-400 text-white border-slate-400'
-                        : 'bg-white text-slate-500 border-slate-300 hover:border-slate-400'
-                    }`}>{v ? '✓ Activo' : '✗ Inactivo'}</button>
-                ))}
-              </div>
-            </div>
-
-            {/* Descripción */}
-            <div className="col-span-2">
-              <label className="block text-xs font-medium text-slate-600 mb-1">Descripción</label>
-              <textarea value={form.description ?? ''} onChange={e => set('description', e.target.value)}
-                rows={2} placeholder="Descripción del producto..." className={`${inp('description')} resize-none`} />
-            </div>
-
-            {/* Notas */}
-            <div className="col-span-2">
-              <label className="block text-xs font-medium text-slate-600 mb-1">Notas internas</label>
-              <textarea value={form.notes ?? ''} onChange={e => set('notes', e.target.value)}
-                rows={2} placeholder="Observaciones para uso interno..." className={`${inp('notes')} resize-none`} />
-            </div>
-          </div>
-
-          <hr className="border-slate-200" />
-
-          {/* ── PRECIOS ── */}
-          <Section title="Configuración de precios" />
-
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Precio de compra (costo)</label>
-              <div className="relative">
-                <span className="absolute left-3 top-2.5 text-slate-400 text-xs">S/.</span>
-                <input type="number" step="0.01" min="0" value={form.costPrice || ''}
-                  onChange={handleCostChange} placeholder="0.00"
-                  className="w-full border border-slate-300 rounded-lg pl-8 pr-3 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-200 transition-all" />
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-medium text-slate-600">Precio de venta <span className="text-red-400">*</span></label>
-                {form.costPrice > 0 && (
-                  <button type="button" onClick={() => set('retailPrice', suggestRetail(form.costPrice))}
-                    className="text-[10px] text-indigo-600 hover:underline flex items-center gap-0.5">
-                    <Wand2 size={10}/> Sugerir +20%
+              {/* ── Columna derecha: Foto ── */}
+              <div className="flex-shrink-0 w-36">
+                <label className={lbl}>Foto</label>
+                <div onClick={() => fileRef.current?.click()}
+                  className={`w-full aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer overflow-hidden transition-all ${
+                    imgPreview ? 'border-slate-200' : 'border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/50'
+                  }`}>
+                  {imgPreview
+                    ? <img src={imgPreview} className="w-full h-full object-cover" alt="preview" />
+                    : <>
+                        <ImagePlus size={24} className="text-slate-300 mb-1" />
+                        <span className="text-[10px] text-slate-400 text-center px-1">Haz clic para agregar</span>
+                        <span className="text-[9px] text-slate-300 mt-0.5">JPG, PNG — máx. 2MB</span>
+                      </>
+                  }
+                </div>
+                {imgPreview && (
+                  <button onClick={() => { setImgPreview(null); if(fileRef.current) fileRef.current.value=''; }}
+                    className="mt-1 flex items-center gap-1 text-[10px] text-red-400 hover:text-red-600 mx-auto">
+                    <Trash2 size={9}/> Quitar imagen
                   </button>
                 )}
+                <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImage} />
               </div>
-              <div className="relative">
-                <span className="absolute left-3 top-2.5 text-slate-400 text-xs">S/.</span>
-                <input type="number" step="0.01" min="0" value={form.retailPrice || ''}
-                  onChange={num('retailPrice')} placeholder="0.00"
-                  className={`${errors.retailPrice ? 'border-red-300' : 'border-slate-300'} w-full border rounded-lg pl-8 pr-3 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-200`} />
-              </div>
-              {errors.retailPrice && <p className="text-red-500 text-xs mt-0.5">{errors.retailPrice}</p>}
             </div>
-          </div>
 
-          {/* IGV + Margen */}
-          {form.retailPrice > 0 && (
-            <div className="flex items-center gap-2 mb-4">
-              <div className="flex gap-2 flex-1">
-                {[
-                  { label: 'Base imponible', value: `S/. ${base.toFixed(2)}`, cls: 'text-slate-700' },
-                  { label: 'IGV 18%',         value: `S/. ${igv.toFixed(2)}`,  cls: 'text-amber-600' },
-                ].map(({ label, value, cls }) => (
-                  <div key={label} className="flex-1 bg-slate-50 border border-slate-200 rounded-lg p-2 text-center">
-                    <p className="text-[10px] text-slate-400">{label}</p>
-                    <p className={`text-sm font-bold ${cls}`}>{value}</p>
+            {/* ════ SECCIÓN DE PRECIOS ════ */}
+            <div className="border-t border-slate-200 mt-4 pt-4">
+              <SectionTitle title="Configuración de precio e inventario" />
+
+              {/* Precios principales en fila */}
+              <div className="grid grid-cols-6 gap-2 mb-3">
+                {/* Costo */}
+                <div className="col-span-1">
+                  <label className={lbl}>Precio compra</label>
+                  <div className="relative">
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-[11px]">S/.</span>
+                    <input type="number" step="0.01" min="0" value={form.costPrice || ''}
+                      onChange={handleCostChange} placeholder="0.00"
+                      className="w-full border border-slate-300 rounded-md pl-7 pr-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-200 transition-all" />
+                  </div>
+                </div>
+
+                {/* Base imponible (calculado) */}
+                <div className="col-span-1">
+                  <label className={lbl}>Precio base</label>
+                  <div className="relative">
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-[11px]">S/.</span>
+                    <input readOnly value={form.retailPrice > 0 ? base.toFixed(2) : ''}
+                      placeholder="0.00"
+                      className="w-full border border-slate-200 bg-slate-50 rounded-md pl-7 pr-2 py-1.5 text-sm text-right text-slate-500 focus:outline-none cursor-default" />
+                  </div>
+                </div>
+
+                {/* IGV */}
+                <div className="col-span-1">
+                  <label className={lbl}>Imp. IGV 18%</label>
+                  <div className="relative">
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-amber-400 text-[11px]">S/.</span>
+                    <input readOnly value={form.retailPrice > 0 ? igv.toFixed(2) : ''}
+                      placeholder="0.00"
+                      className="w-full border border-amber-200 bg-amber-50 rounded-md pl-7 pr-2 py-1.5 text-sm text-right text-amber-700 focus:outline-none cursor-default" />
+                  </div>
+                </div>
+
+                {/* Precio venta */}
+                <div className="col-span-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className={`${lbl} mb-0`}>Precio de venta <span className="text-red-400">*</span></label>
+                    {form.costPrice > 0 && (
+                      <button type="button" onClick={() => set('retailPrice', suggestRetail(form.costPrice))}
+                        className="text-[10px] text-indigo-500 hover:text-indigo-700 flex items-center gap-0.5">
+                        <Wand2 size={9}/> +20%
+                      </button>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-[11px]">S/.</span>
+                    <input type="number" step="0.01" min="0" value={form.retailPrice || ''}
+                      onChange={num('retailPrice')} placeholder="0.00"
+                      className={`w-full border rounded-md pl-7 pr-2 py-1.5 text-sm text-right font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-200 transition-all ${errors.retailPrice ? 'border-red-300 bg-red-50' : 'border-indigo-300'}`} />
+                  </div>
+                  {errors.retailPrice && <p className="text-red-500 text-[10px] mt-0.5">{errors.retailPrice}</p>}
+                </div>
+
+                {/* Margen */}
+                <div className="col-span-1 flex flex-col">
+                  <label className={lbl}>Margen</label>
+                  <div className="flex-1 flex items-center justify-center">
+                    {form.costPrice > 0 && form.retailPrice > 0
+                      ? <MarginBadge cost={form.costPrice} retail={form.retailPrice} />
+                      : <span className="text-slate-300 text-xs">—</span>
+                    }
+                  </div>
+                </div>
+              </div>
+
+              {/* Precios mayoristas + VIP en una sola fila */}
+              <div className="grid grid-cols-8 gap-2">
+                {/* Mayoristas */}
+                {([1,2,3] as const).map(n => (
+                  <div key={n} className="col-span-1">
+                    <label className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wide mb-1">Mayorista {n}</label>
+                    <div className="relative">
+                      <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]">S/</span>
+                      <input type="number" step="0.01" min="0" placeholder="0.00"
+                        value={(form[`wholesalePrice${n}` as keyof CreateProductDto] as number) || ''}
+                        onChange={num(`wholesalePrice${n}` as keyof CreateProductDto)}
+                        className={`${nInp} pl-5 py-1.5 text-xs`} />
+                    </div>
+                  </div>
+                ))}
+                {/* VIP */}
+                {([
+                  { key: 'memberPrice', label: 'Miembro' },
+                  { key: 'vipPrice2',   label: 'VIP 2' },
+                  { key: 'vipPrice3',   label: 'VIP 3' },
+                  { key: 'vipPrice4',   label: 'VIP 4' },
+                  { key: 'vipPrice5',   label: 'VIP 5' },
+                ]).map(({ key, label }) => (
+                  <div key={key} className="col-span-1">
+                    <label className="block text-[10px] text-indigo-400 font-semibold uppercase tracking-wide mb-1">{label}</label>
+                    <div className="relative">
+                      <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-indigo-300 text-[10px]">S/</span>
+                      <input type="number" step="0.01" min="0" placeholder="0.00"
+                        value={(form[key as keyof CreateProductDto] as number) || ''}
+                        onChange={num(key as keyof CreateProductDto)}
+                        className="w-full border border-indigo-200 bg-indigo-50/40 rounded-md pl-5 pr-1 py-1.5 text-xs text-right focus:outline-none focus:ring-2 focus:ring-indigo-200" />
+                    </div>
                   </div>
                 ))}
               </div>
-              <MarginBadge cost={form.costPrice} retail={form.retailPrice} />
             </div>
-          )}
 
-          {/* Mayoristas */}
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Precios mayoristas</p>
-          <div className="grid grid-cols-3 gap-2 mb-4">
-            {([1,2,3] as const).map(n => (
-              <div key={n}>
-                <label className="block text-[11px] text-slate-500 mb-1">Mayorista {n}</label>
-                <div className="relative">
-                  <span className="absolute left-2 top-2.5 text-slate-400 text-[11px]">S/.</span>
-                  <input type="number" step="0.01" min="0" placeholder="0.00"
-                    value={(form[`wholesalePrice${n}` as keyof CreateProductDto] as number) || ''}
-                    onChange={num(`wholesalePrice${n}` as keyof CreateProductDto)}
-                    className={`${numInp} pl-7 text-xs`} />
-                </div>
-              </div>
-            ))}
           </div>
+        </div>
 
-          {/* VIP */}
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Precios Miembro / VIP</p>
-          <div className="grid grid-cols-5 gap-2 mb-2">
-            {[
-              { key: 'memberPrice', label: 'Miembro' },
-              { key: 'vipPrice2',   label: 'VIP 2' },
-              { key: 'vipPrice3',   label: 'VIP 3' },
-              { key: 'vipPrice4',   label: 'VIP 4' },
-              { key: 'vipPrice5',   label: 'VIP 5' },
-            ].map(({ key, label }) => (
-              <div key={key}>
-                <label className="block text-[10px] text-slate-500 mb-1">{label}</label>
-                <div className="relative">
-                  <span className="absolute left-1.5 top-2 text-slate-400 text-[10px]">S/</span>
-                  <input type="number" step="0.01" min="0" placeholder="0.00"
-                    value={(form[key as keyof CreateProductDto] as number) || ''}
-                    onChange={num(key as keyof CreateProductDto)}
-                    className="w-full border border-slate-300 rounded-lg pl-5 pr-1 py-1.5 text-xs text-right focus:outline-none focus:ring-2 focus:ring-indigo-200" />
-                </div>
-              </div>
-            ))}
-          </div>
-
-        </div>{/* end scroll */}
-
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-5 py-3.5 border-t border-slate-200 bg-slate-50 rounded-b-2xl flex-shrink-0">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-200 rounded-lg transition-colors">Cancelar</button>
+        {/* ── Footer ── */}
+        <div className="flex items-center justify-end gap-3 px-6 py-3 border-t border-slate-200 bg-slate-50 rounded-b-2xl flex-shrink-0">
+          <button onClick={onClose} className="px-5 py-2 text-sm text-slate-600 hover:bg-slate-200 rounded-lg transition-colors">
+            Cancelar
+          </button>
           <button onClick={handleSave} disabled={loading}
-            className="px-5 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-semibold transition-colors min-w-[120px] text-center">
+            className="px-6 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-semibold transition-colors min-w-[130px] text-center">
             {loading ? 'Guardando...' : product ? 'Guardar cambios' : 'Crear producto'}
           </button>
         </div>

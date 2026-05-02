@@ -81,6 +81,7 @@ export interface CreateProductDto {
   vipPrice5?: number;
   taxRate?: number;
   isTaxExempt?: boolean;
+  mainImageUrl?: string;
 }
 
 export type UpdateProductDto = Partial<CreateProductDto>;

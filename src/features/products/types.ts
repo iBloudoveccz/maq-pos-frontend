@@ -20,7 +20,7 @@ export interface UpdateCategoryDto {
 // ── PRODUCT ──────────────────────────────────────────────────────────────────
 export interface Product {
   id: string;
-  sku: string;           // código interno (Cpcode del S12)
+  sku: string;
   barcode?: string | null;
   name: string;
   description?: string | null;
@@ -51,14 +51,13 @@ export interface Product {
   createdAt: string;
   updatedAt: string;
 
-  // Calculado por el backend
   totalStock?: number;
   isLowStock?: boolean;
 }
 
 export interface CreateProductDto {
   name: string;
-  sku?: string;          // código interno — auto-generado si vacío
+  sku?: string;
   barcode?: string;
   description?: string;
   spec?: string;
@@ -82,6 +81,8 @@ export interface CreateProductDto {
   taxRate?: number;
   isTaxExempt?: boolean;
   mainImageUrl?: string;
+
+  initialStock?: number;   // ← NUEVO: inventario inicial al crear
 }
 
 export type UpdateProductDto = Partial<CreateProductDto>;
@@ -89,6 +90,7 @@ export type UpdateProductDto = Partial<CreateProductDto>;
 export interface ProductFilters {
   search?: string;
   categoryId?: number | null;
+  categoryIds?: number[];   // ← NUEVO: incluye hijos
   isActive?: boolean;
   page?: number;
   limit?: number;

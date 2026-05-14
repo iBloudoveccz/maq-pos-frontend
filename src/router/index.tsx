@@ -4,6 +4,7 @@ import { RoleGuard }      from './RoleGuard'
 import { AdminShell }     from '@/components/layout/AdminShell'
 import { LoginPage }      from '@/features/auth/LoginPage'
 import { DashboardPage }  from '@/features/dashboard/DashboardPage'
+import { InventoryPage } from '@/features/inventory/InventoryPage'
 import ProductsPage from '@/features/products/ProductsPage'
 
 export const router = createBrowserRouter([
@@ -27,6 +28,7 @@ export const router = createBrowserRouter([
           { path: '/dashboard', element: <DashboardPage /> },
           // Se irán agregando aquí módulo por módulo:
           { path: '/products',     element: <ProductsPage /> },
+          { path: '/inventory', element: <InventoryPage /> },
           // { path: '/products/new', element: <ProductFormPage /> },
           // { path: '/products/:id', element: <ProductFormPage /> },
           // { path: '/sales',        element: <SalesPage /> },

@@ -1,82 +1,94 @@
-import type { AxiosResponse } from 'axios';
-import { api } from './axios';
-import type {
-  Product,
-  CreateProductDto,
-  UpdateProductDto,
-  ProductFilters,
-  PaginatedProducts,
-} from '@/features/products/types';
+import { api } from './axios'
+import type { Product, CreateProductDto, UpdateProductDto, ProductFilters, PaginatedProducts } from '../features/products/types'
 
-const BASE = '/products';
+// ─── Normalizar Decimal de Prisma → number JS ─────────────────────────────────
 
-interface BackendProductsResponse {
-  items: Product[];
-  meta: { total?: number; totalItems?: number; itemCount?: number; itemsPerPage?: number; totalPages?: number; currentPage?: number; page?: number; limit?: number; };
+export function normalizeProduct(p: any): Product {
+  const numFields = [
+    'costPrice','retailPrice','wholesalePrice1','wholesalePrice2','wholesalePrice3',
+    'memberPrice','vipPrice2','vipPrice3','vipPrice4','vipPrice5','taxRate',
+  ]
+  const out: any = { ...p }
+  for (const f of numFields) {
+    if (out[f] != null) out[f] = Number(out[f])
+  }
+  return out as Product
 }
 
-/** Convierte todos los campos Decimal de Prisma a número JS */
-function toNum(v: unknown): number {
-  if (v === null || v === undefined) return 0;
-  return typeof v === 'object' ? Number(v) : Number(v);
-}
-
-function normalizeProduct(p: Product): Product {
-  return {
-    ...p,
-    costPrice:       toNum(p.costPrice),
-    retailPrice:     toNum(p.retailPrice),
-    wholesalePrice1: toNum(p.wholesalePrice1),
-    wholesalePrice2: toNum(p.wholesalePrice2),
-    wholesalePrice3: toNum(p.wholesalePrice3),
-    memberPrice:     toNum(p.memberPrice),
-    vipPrice2:       toNum(p.vipPrice2),
-    vipPrice3:       toNum(p.vipPrice3),
-    vipPrice4:       toNum(p.vipPrice4),
-    vipPrice5:       toNum(p.vipPrice5),
-    taxRate:         toNum(p.taxRate),
-  };
-}
-
-function normalize(raw: BackendProductsResponse): PaginatedProducts {
-  const meta = raw.meta ?? {};
-  return {
-    data:  (raw.items ?? []).map(normalizeProduct),
-    total: meta.total ?? meta.totalItems ?? meta.itemCount ?? 0,
-    page:  meta.currentPage ?? meta.page ?? 1,
-    limit: meta.itemsPerPage ?? meta.limit ?? 20,
-  };
-}
+// ─── API calls ────────────────────────────────────────────────────────────────
 
 export const productsApi = {
-  getAll: (filters?: ProductFilters): Promise<PaginatedProducts> => {
-    const params: Record<string, string | number | boolean> = {};
-    if (filters?.search)     params.search     = filters.search;
-    if (filters?.categoryId !== undefined && filters.categoryId !== null)
-                              params.categoryId = filters.categoryId;
-    if (filters?.isActive !== undefined) params.isActive = filters.isActive;
-    if (filters?.page)       params.page       = filters.page;
-    if (filters?.limit)      params.limit      = filters.limit;
-    return api.get<BackendProductsResponse>(BASE, { params })
-      .then((r: AxiosResponse<BackendProductsResponse>) => normalize(r.data));
+
+  /**
+   * Lista productos con soporte para múltiples categoryIds (incluye subcategorías).
+   * Usado por ProductsPage.
+   */
+  getAll: async (filters?: ProductFilters): Promise<PaginatedProducts> => {
+    const params: any = {}
+    if (filters?.search)      params.search   = filters.search
+    if (filters?.isActive !== undefined) params.isActive = filters.isActive
+    if (filters?.page)        params.page     = filters.page
+    if (filters?.limit)       params.limit    = filters.limit
+
+    // Pasar categoryIds como array (Axios serializa como categoryIds[]=1&categoryIds[]=2)
+    if (filters?.categoryIds?.length) {
+      params.categoryIds = filters.categoryIds
+    } else if (filters?.categoryId) {
+      params.categoryId = filters.categoryId
+    }
+
+    const res = await api.get<any>('/products', { params })
+    const raw  = Array.isArray(res.data) ? res.data : (res.data?.data ?? [])
+    const total = res.data?.total ?? raw.length
+    return {
+      data:  raw.map(normalizeProduct),
+      total,
+      page:  res.data?.page  ?? filters?.page  ?? 1,
+      limit: res.data?.limit ?? filters?.limit ?? 20,
+    }
   },
 
-  getOne: (id: string): Promise<Product> =>
-    api.get<Product>(`${BASE}/${id}`)
-      .then((r: AxiosResponse<Product>) => normalizeProduct(r.data)),
+  getOne: async (id: string): Promise<Product> => {
+    const res = await api.get<any>(`/products/${id}`)
+    return normalizeProduct(res.data)
+  },
 
-  create: (dto: CreateProductDto): Promise<Product> =>
-    api.post<Product>(BASE, dto)
-      .then((r: AxiosResponse<Product>) => normalizeProduct(r.data)),
+  /**
+   * Crea el producto y, si initialStock > 0, registra el stock inicial.
+   * Devuelve solo el Product (compatible con el mutation handler del ProductsPage).
+   */
+  create: async (dto: CreateProductDto): Promise<Product> => {
+    const { initialStock, ...productData } = dto
 
-  update: (id: string, dto: UpdateProductDto): Promise<Product> =>
-    api.patch<Product>(`${BASE}/${id}`, dto)
-      .then((r: AxiosResponse<Product>) => normalizeProduct(r.data)),
+    // 1. Crear el producto
+    const res = await api.post<any>('/products', productData)
+    const product = normalizeProduct(res.data)
 
-  delete: (id: string): Promise<void> =>
-    api.delete<void>(`${BASE}/${id}`).then((r: AxiosResponse<void>) => r.data),
+    // 2. Registrar stock inicial si corresponde
+    if (initialStock && initialStock > 0) {
+      try {
+        await api.post('/stock/adjust', {
+          productId:    product.id,
+          quantity:     initialStock,
+          movementType: 'ADJUSTMENT',
+          notes:        `Stock inicial al crear "${product.name}"`,
+        })
+      } catch (err) {
+        console.warn('Producto creado pero falló el stock inicial:', err)
+        // No lanzar — el producto ya existe, el stock se puede ajustar después
+      }
+    }
 
-  toggleActive: (id: string, isActive: boolean): Promise<Product> =>
-    api.patch<Product>(`${BASE}/${id}`, { isActive })
-      .then((r: AxiosResponse<Product>) => normalizeProduct(r.data)),
-};
+    return product
+  },
+
+  update: async (id: string, dto: Partial<UpdateProductDto>): Promise<Product> => {
+    const { initialStock, ...productData } = dto as any
+    const res = await api.patch<any>(`/products/${id}`, productData)
+    return normalizeProduct(res.data)
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`/products/${id}`)
+  },
+}

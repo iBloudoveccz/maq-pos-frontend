@@ -22,6 +22,14 @@ type CatModal =
   | { mode: 'delete';     target: Category }
   | null;
 
+// ─── Helper: IDs de categoría seleccionada + todas sus hijas ─────────────────
+function getCategoryFilterIds(selectedId: number | null, allCats: Category[]): number[] | undefined {
+  if (!selectedId) return undefined
+  const ids = [selectedId]
+  allCats.forEach(c => { if (c.parentId === selectedId) ids.push(c.id) })
+  return ids
+}
+
 export default function ProductsPage() {
   const qc = useQueryClient();
 
@@ -56,12 +64,16 @@ export default function ProductsPage() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Calcular IDs de filtro: categoría seleccionada + todas sus hijas
+  const categoryFilterIds = getCategoryFilterIds(selectedCategoryId, categories);
+
   const { data: productsData, isLoading: prodsLoading } = useQuery({
-    queryKey: ['products', { search: debouncedSearch, categoryId: selectedCategoryId, page }],
+    queryKey: ['products', { search: debouncedSearch, categoryIds: categoryFilterIds, page }],
     queryFn:  () => productsApi.getAll({
-      search: debouncedSearch || undefined,
-      categoryId: selectedCategoryId ?? undefined,
-      page, limit: LIMIT,
+      search:      debouncedSearch || undefined,
+      categoryIds: categoryFilterIds,   // ← pasa padre + hijos
+      page,
+      limit: LIMIT,
     }),
     placeholderData: (prev) => prev,
   });
@@ -102,19 +114,34 @@ export default function ProductsPage() {
   // ── Product mutations ──
   const createProdMutation = useMutation({
     mutationFn: (dto: CreateProductDto) => productsApi.create(dto),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['products'] }); qc.invalidateQueries({ queryKey: ['categories'] }); toast.success('Producto creado'); setProdModal({ open: false }); },
+    onSuccess: (product, dto) => {
+      qc.invalidateQueries({ queryKey: ['products'] });
+      qc.invalidateQueries({ queryKey: ['categories'] });
+      // Invalidar inventario para reflejar el stock inicial
+      qc.invalidateQueries({ queryKey: ['stock'] });
+      const stock = (dto as any).initialStock ?? 0
+      if (stock > 0) {
+        toast.success(`Producto creado con ${stock} ${product.unit ?? 'und'} en inventario`)
+      } else {
+        toast.success('Producto creado')
+      }
+      setProdModal({ open: false });
+    },
     onError: (e: unknown) => { const ax = e as { response?: { data?: { message?: string | string[] } } }; const m = ax?.response?.data?.message; toast.error(Array.isArray(m) ? m[0] : (m ?? 'Error al crear producto')); }
   });
+
   const updateProdMutation = useMutation({
     mutationFn: ({ id, dto }: { id: string; dto: UpdateProductDto }) => productsApi.update(id, dto),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['products'] }); toast.success('Producto actualizado'); setProdModal({ open: false }); },
     onError: (e: unknown) => { const ax = e as { response?: { data?: { message?: string | string[] } } }; const m = ax?.response?.data?.message; toast.error(Array.isArray(m) ? m[0] : (m ?? 'Error al actualizar')); }
   });
+
   const deleteProdMutation = useMutation({
     mutationFn: (id: string) => productsApi.delete(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['products'] }); qc.invalidateQueries({ queryKey: ['categories'] }); toast.success('Producto eliminado'); setDeleteModal(null); },
     onError: (e: unknown) => { const ax = e as { response?: { data?: { message?: string | string[] } } }; const m = ax?.response?.data?.message; toast.error(Array.isArray(m) ? m[0] : (m ?? 'Error al eliminar')); }
   });
+
   const toggleActiveMutation = useMutation({
     mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) => productsApi.update(id, { isActive }),
     onSuccess: (_d, vars) => { qc.invalidateQueries({ queryKey: ['products'] }); toast.success(vars.isActive ? 'Producto activado' : 'Producto desactivado'); },
@@ -148,7 +175,6 @@ export default function ProductsPage() {
 
       {/* ── Right: product area ── */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "white" }}>
-
         <ProductTable
           products={products} total={total} page={page} limit={LIMIT}
           loading={prodsLoading} search={search}
